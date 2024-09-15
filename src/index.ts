@@ -12,6 +12,19 @@ const app = new Hono<{
 }>()
 
 
+app.use('/api/v1/blog/*', async (c, next) => {
+  const header = c.req.header("authorization") || "";
+
+  const response = await verify(header, c.env.JWT_SECRET);
+
+  if(response.id){
+    next()
+  }else{
+    c.status(403)
+    return c.json({error : "unauthorized"})
+  }
+})
+
 //signup route
 app.post('/api/v1/user/signup', async (c) => {
   const prisma = new PrismaClient({
