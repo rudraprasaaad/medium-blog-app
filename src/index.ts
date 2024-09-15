@@ -54,7 +54,16 @@ app.post('/api/v1/user/signin', async (c) => {
     }
   })
 
+  if(!user){
+    c.status(403);
+    return c.json({error : "user not found"})
+  }
 
+  const token = await sign({
+    id : user.email
+  }, c.env.JWT_SECRET)
+
+  return c.json({jwt : token})
 })
 
 
