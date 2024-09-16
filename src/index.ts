@@ -12,43 +12,21 @@ const app = new Hono<{
 }>()
 
 
-app.use('/api/v1/blog/*', async (c, next) => {
-  const header = c.req.header("authorization") || "";
-
-  const response = await verify(header, c.env.JWT_SECRET);
-
-  if(response.id){
-    next()
-  }else{
-    c.status(403)
-    return c.json({error : "unauthorized"})
-  }
-})
 
 //signup route
 app.post('/api/v1/user/signup', async (c) => {
-  const prisma = new PrismaClient({
-    datasourceUrl : c.env.DATABASE_URL,
-  }
-  ).$extends(withAccelerate())
-
   const body = await c.req.json();
-  try{
-    const user = await prisma.user.create({
-      data : {  
-        email : body.email,
-        password : body.password
-      }
-    });
+  const prisma = new PrismaClient({
+    datasourceUrl : c.env.DATABASE_URL
+  }).$extends(withAccelerate())
 
-    const token =  await sign({id : user.id}, c.env.JWT_SECRET)
-    return c.json({
-      jwt : token
-    });
-  }
-  catch(e){
-    return c.status(403);
-  }
+  await prisma.user.create({
+    data : {
+      username : body.username,
+      password : body.password,
+      name : body.name 
+    }
+  })
 })
 
 
@@ -60,9 +38,9 @@ app.post('/api/v1/user/signin', async (c) => {
 
   const body = await c.req.json();
   
-  const user = await prisma.user.findUnique({
+  const user = await prisma.user.findFirst ({
     where :{ 
-      email : body.email,
+      username : body.email,
       password:  body.password
     }
   })
@@ -73,7 +51,7 @@ app.post('/api/v1/user/signin', async (c) => {
   }
 
   const token = await sign({
-    id : user.email
+    id : user.username
   }, c.env.JWT_SECRET)
 
   return c.json({jwt : token})
@@ -92,7 +70,7 @@ app.put('/api/v1/blog', (c) => {
 
 // Blog get by id
 app.get('/api/v1/blog/:id', (c) => {
-  const id = c.req.param("id");
+    const id = c.req.param("id");
   console.log(id);
   return c.text('Hello from get single')
 })
